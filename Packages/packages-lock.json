@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.dison.tools": {
+      "version": "https://github.com/aa04047878/com.dison.tools.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "9e08aab6549ae93ef3dc5ac788692b5cdf1de69b"
+    },
     "com.unity.2d.animation": {
       "version": "9.1.2",
       "depth": 0,

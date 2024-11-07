@@ -11,6 +11,11 @@ public class PlayerCtrl : MonoBehaviour
     public Vector3 directionDown;
     public float power;
     public float gravity;
+    /// <summary>
+    /// 移動變數
+    /// </summary>
+    float moveVariable;
+    //float moveVariableVer;
     /*    
     經過我的觀察，
     跳　>> AddForce
@@ -22,82 +27,52 @@ public class PlayerCtrl : MonoBehaviour
     /// </summary>
     public void PlayerMove()
     {
-        ////向上移動
-        //if (Input.GetKey(KeyCode.UpArrow))
-        //{
-        //    // "=" : 移動速度不疊加
-        //    power = 5;
-        //    rd.velocity = directionUp * power;
-        //}
 
-        ////向下移動
-        //if (Input.GetKey(KeyCode.DownArrow))
-        //{
-        //    // "=" : 移動速度不疊加
-        //    power = 5;
-        //    rd.velocity = directionDown * power;
-        //}
-
-        //向左移動
-        if (Input.GetKey(KeyCode.LeftArrow))
-        {
-            // "=" : 移動速度不疊加
-            power = 5;
-            rb.velocity = directionLeft * power;
-            //rb.AddForce(directionLeft * power);
-        }
-
-        //向右移動
-        if (Input.GetKey(KeyCode.RightArrow))
-        {
-            // "=" : 移動速度不疊加
-            power = 5;
-            rb.velocity = directionRight * power;
-            //rb.AddForce(directionRight * power);
-            Debug.Log($"向右移動的power : {power}");
-        }
-
-        ////停止向上移動
-        //if (Input.GetKeyUp(KeyCode.UpArrow))
-        //{
-        //    power = 0;
-        //    rd.velocity = directionUp * power;
-        //}
-
-        ////停止向下移動
-        //if (Input.GetKeyUp(KeyCode.DownArrow))
-        //{
-        //    power = 0;
-        //    rd.velocity = directionDown * power;
-        //}
-
-        //停止向左移動
-        if (Input.GetKeyUp(KeyCode.LeftArrow))
-        {
-            power = 0;
-            rb.velocity = directionLeft * power;
-            //rb.AddForce(directionLeft * power);
-        }
-
-        //停止向右移動
-        if (Input.GetKeyUp(KeyCode.RightArrow))
-        {
-            power = 0;
-            rb.velocity = directionRight * power;
-            //rb.AddForce(directionRight * power);
-            Debug.Log($"停止向右移動的power : {power}");
-        }
-
+        #region Input.GetKey
+        /*
+        Input.GetKey() : 
+        只有在按鍵盤的時候才會有反應，然而角色的重力是時時刻刻存在的，所以移動角色不要用
+        */
+        
         //跳(連續案就是N段跳)
         if (Input.GetKeyDown(KeyCode.Space))
         {
             power = 5;
             rb.velocity = directionUp * power;
             //rb.AddForce(directionUp * power);
-            Debug.Log($"跳的power : {power}");
+            //Debug.Log($"跳的power : {power}");
         }
+        #endregion
 
-        Physics.gravity = new Vector3(0, gravity, 0);  // gravity= -35 其他的默认
+        #region Input.GetAxis
+        /*
+        Input.GetAxis() :
+        會返還一個float，往左(A、←)float = -1，往右(D、→)float = 1，都沒按float = 0
+        控制方向的參數 : moveVariable
+        */
+        moveVariable = Input.GetAxis("Horizontal");
+        
+        if (moveVariable > 0) //往右移動
+        {            
+            power = 5;
+            //方向 * 力道 * (1「右」 / -1 「左」) * 角色的重力
+            rb.velocity = directionRight * power * moveVariable + directionUp * rb.velocity.y;
+        }
+        else if (moveVariable < 0) //往左移動
+        {
+            power = 5;
+            //方向 * 力道 * (1「右」 / -1 「左」) * 角色的重力 
+            rb.velocity = directionRight * power * moveVariable + directionUp * rb.velocity.y;
+        }
+        else //沒移動
+        {
+            power = 0;
+            //方向 * 力道 * (1「右」 / -1 「左」) * 角色的重力 
+            rb.velocity = directionDown * power * moveVariable + directionUp * rb.velocity.y;
+        }
+        //Input.GetAxis("Horizontal");
+        #endregion
+        //Physics.gravity = new Vector3(0, gravity, 0);  // gravity= -35 其他的默认
     }
 
 
