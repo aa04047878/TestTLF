@@ -72,6 +72,7 @@ public class PlayerCtrl : MonoBehaviour
         }
         //Input.GetAxis("Horizontal");
         #endregion
+
         //Physics.gravity = new Vector3(0, gravity, 0);  // gravity= -35 其他的默认
     }
 
