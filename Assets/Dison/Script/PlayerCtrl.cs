@@ -31,7 +31,7 @@ public class PlayerCtrl : MonoBehaviour
     /// <summary>
     /// 現在的狀態
     /// </summary>
-    Status nowStatus;
+    public Status nowStatus;
 
     [Header("耐力")]
     /// <summary>
@@ -49,25 +49,17 @@ public class PlayerCtrl : MonoBehaviour
     /// </summary>
     public Image staminaBar;
 
+    /// <summary>
+    /// 耐力已耗盡
+    /// </summary>
+    bool staminaEmpty;
     /*    
     經過我的觀察，
     跳　>> AddForce
     移動 >> velocity
     */
 
-    /// <summary>
-    /// 初始化
-    /// </summary>
-    public void Init()
-    {
-        jumpTimes = 0;
-        nowStamina = 100f;
-        maxStamina = 100f;
-        nowStatus = Status.NormalStatus;
-    }
-
-    
-
+    #region 玩家移動
     /// <summary>
     /// 浮空狀態移動
     /// </summary>
@@ -99,27 +91,27 @@ public class PlayerCtrl : MonoBehaviour
         //    }
         //}
 
-        if (rb.bodyType == RigidbodyType2D.Static) //在浮空狀態下，才能上下移動
+        if (nowStatus == Status.FloatingStatus) //在浮空狀態下，才能上下移動
         {
             if (moveVariableVer == 0 && moveVariableHor == 0) //沒有移動
             {
                 nowStatus = Status.FloatingStatus; //浮空狀態
-                rb.bodyType = RigidbodyType2D.Static; //浮空狀態
-                Debug.Log("moveVariableVer : " + moveVariableVer);
+                rb.bodyType = RigidbodyType2D.Static;
+                //Debug.Log("moveVariableVer : " + moveVariableVer);
                 Debug.Log("沒移動");
             }
             else
             {
                 //有移動
                 rb.bodyType = RigidbodyType2D.Dynamic; //在Static狀態下無法移動
-                nowStatus = Status.AirMoveStatus;
-                Debug.Log("moveVariableVer : " + moveVariableVer);
+                nowStatus = Status.AirMoveStatus; //浮空移動狀態
+                //Debug.Log("moveVariableVer : " + moveVariableVer);
             }
         }
-        
+
 
         if (nowStatus == Status.AirMoveStatus)
-        {                                   
+        {
             if (moveVariableVer == 0 && moveVariableHor == 0)
             {
                 nowStatus = Status.FloatingStatus; //浮空狀態
@@ -136,12 +128,11 @@ public class PlayerCtrl : MonoBehaviour
                 //power = 5;
                 ////                    方向   * 力道  * (1「上」 / -1 「下」)
                 //rb.velocity = directionUp * power * moveVariableVer;
-                ConsumeStamina();
 
+                //浮空狀態移動
                 Vector3 movement = new Vector3(moveVariableHor, moveVariableVer, 0);
                 Debug.Log($"movement : {movement}");
                 rb.velocity = movement * power;
-                
             }
         }
     }
@@ -151,8 +142,6 @@ public class PlayerCtrl : MonoBehaviour
     /// </summary>
     private void NormalStatusMove(float moveVariableHor)
     {
-        
-
         //if (moveVariableHor > 0) //往右移動
         //{
         //    power = 5;
@@ -178,10 +167,9 @@ public class PlayerCtrl : MonoBehaviour
         if (nowStatus == Status.NormalStatus)
         {
             Vector3 movement = new Vector3(moveVariableHor, 0, 0);
-            Debug.Log($"movement : {movement}");
+            //Debug.Log($"movement : {movement}");
             rb.velocity = movement * power + directionUp * rb.velocity.y;
         }
-        
     }
 
     /// <summary>
@@ -204,9 +192,10 @@ public class PlayerCtrl : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space))
         {
             jumpTimes++;
-            if (rb.bodyType == RigidbodyType2D.Static) //在浮空狀態下再按一次跳
+            if (nowStatus == Status.FloatingStatus) //在浮空狀態下再按一次跳
             {
-                rb.bodyType = RigidbodyType2D.Dynamic; //解除浮空狀態
+                rb.bodyType = RigidbodyType2D.Dynamic;
+                nowStatus = Status.NormalStatus; //變回普通狀態
                 jumpTimes = 0; //跳的次數重新計算
             }
             else if (jumpTimes == 1)
@@ -217,12 +206,12 @@ public class PlayerCtrl : MonoBehaviour
                 //rb.AddForce(directionUp * power);
                 //Debug.Log($"跳的power : {power}");
             }
-            else if (jumpTimes == 2)
+            else if (jumpTimes == 2 && !staminaEmpty) //耐力沒耗盡的情況下按2次跳，才能浮空
             {
                 //Static狀態下，物體不會移動，正在物理移動中的物體會瞬間停止。
-                rb.bodyType = RigidbodyType2D.Static; //浮空狀態
+                rb.bodyType = RigidbodyType2D.Static;
+                nowStatus = Status.FloatingStatus; //浮空狀態
                 Debug.Log("跳二次");
-
             }
         }
     }
@@ -232,7 +221,6 @@ public class PlayerCtrl : MonoBehaviour
     /// </summary>
     public void PlayerMove()
     {
-
         #region Input.GetKey
         /*
         Input.GetKey() : 
@@ -251,16 +239,80 @@ public class PlayerCtrl : MonoBehaviour
         #endregion
 
         Jump();
-        Move(moveVariableHor, moveVariableVer);       
+        Move(moveVariableHor, moveVariableVer);
     }
+    #endregion
 
+    #region 玩家消耗
     /// <summary>
     /// 消耗耐力
     /// </summary>
     public void ConsumeStamina()
     {
-        nowStamina -= Time.deltaTime * 10; //每秒消耗10點耐力
-        staminaBar.transform.localPosition = new Vector3((-250 + 250 * (nowStamina / maxStamina)), 0f, 0f);
+        if (nowStatus != Status.None && nowStatus != Status.NormalStatus)
+        {
+            nowStamina -= Time.deltaTime * 10; //每秒消耗10點耐力
+            staminaBar.transform.localPosition = new Vector3((-250 + 250 * (nowStamina / maxStamina)), 0f, 0f);
+        }
+    }
+
+    /// <summary>
+    /// 玩家消耗
+    /// </summary>
+    public void PlayerConsume()
+    {
+        ConsumeStamina();
+    }
+
+    #endregion
+
+    #region 玩家疲憊
+    /// <summary>
+    /// 玩家疲憊
+    /// </summary>
+    public void PlayerTired()
+    {
+        StaminaEmpty();
+    }
+
+    /// <summary>
+    /// 耐力消耗殆盡
+    /// </summary>
+    public void StaminaEmpty()
+    {
+        if (staminaEmpty) //耐力已耗盡
+            return;
+
+        if (nowStamina <= 0)
+        {
+            nowStamina = 0;
+            nowStatus = Status.NormalStatus; //變回普通狀態
+            rb.bodyType = RigidbodyType2D.Dynamic;
+            staminaEmpty = true;
+            Debug.Log("耐力消耗殆盡");
+        }
+    }
+    #endregion
+
+    /// <summary>
+    /// 初始化
+    /// </summary>
+    public void Init()
+    {
+        jumpTimes = 0;
+        nowStamina = 100f;
+        maxStamina = 100f;
+        nowStatus = Status.NormalStatus;
+    }
+
+    /// <summary>
+    /// 玩家行為
+    /// </summary>
+    public void PlayerBehaviour()
+    {
+        PlayerMove();
+        PlayerConsume();
+        PlayerTired();
     }
 
     private void OnCollisionEnter2D(Collision2D hit)
@@ -287,7 +339,6 @@ public class PlayerCtrl : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        PlayerMove();
-        //staminaBar.transform.localPosition = new Vector3(-250 + 250 * (nowStamina / maxStamina), 0f, 0f);
+        PlayerBehaviour();
     }
 }
