@@ -1,9 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerCtrl : MonoBehaviour
 {
+    [Header("玩家移動")]
     public Rigidbody2D rb;
     public Vector3 directionRight;
     public Vector3 directionLeft;
@@ -31,6 +33,22 @@ public class PlayerCtrl : MonoBehaviour
     /// </summary>
     Status nowStatus;
 
+    [Header("耐力")]
+    /// <summary>
+    /// 最大耐力
+    /// </summary>
+    public float maxStamina;
+
+    /// <summary>
+    /// 目前的耐力
+    /// </summary>
+    public float nowStamina;
+
+    /// <summary>
+    /// 耐力條
+    /// </summary>
+    public Image staminaBar;
+
     /*    
     經過我的觀察，
     跳　>> AddForce
@@ -43,6 +61,9 @@ public class PlayerCtrl : MonoBehaviour
     public void Init()
     {
         jumpTimes = 0;
+        nowStamina = 100f;
+        maxStamina = 100f;
+        nowStatus = Status.NormalStatus;
     }
 
     
@@ -50,83 +71,128 @@ public class PlayerCtrl : MonoBehaviour
     /// <summary>
     /// 浮空狀態移動
     /// </summary>
-    private void FloatingStatusMove()
+    private void FloatingStatusMove(float moveVariableHor, float moveVariableVer)
     {
-        moveVariableVer = Input.GetAxis("Vertical"); //垂直移動
+
+        //if (rb.bodyType == RigidbodyType2D.Static) //在浮空狀態下，才能上下移動
+        //{
+        //    if (moveVariableVer > 0) //往上移動
+        //    {
+        //        rb.bodyType = RigidbodyType2D.Dynamic; //在Static狀態下無法移動
+
+        //        nowStatus = Status.AirMoveStatus;
+        //        Debug.Log("moveVariableVer : " + moveVariableVer);
+        //    }
+        //    else if (moveVariableVer < 0) //往下移動
+        //    {
+        //        rb.bodyType = RigidbodyType2D.Dynamic; //在Static狀態下無法移動
+
+        //        nowStatus = Status.AirMoveStatus;
+        //        Debug.Log("moveVariableVer : " + moveVariableVer);
+        //    }
+        //    else //沒移動
+        //    {
+        //        nowStatus = Status.FloatingStatus; //浮空狀態
+        //        rb.bodyType = RigidbodyType2D.Static; //浮空狀態
+        //        Debug.Log("moveVariableVer : " + moveVariableVer);
+        //        Debug.Log("沒移動");
+        //    }
+        //}
+
         if (rb.bodyType == RigidbodyType2D.Static) //在浮空狀態下，才能上下移動
         {
-            if (moveVariableVer > 0) //往上移動
-            {
-                rb.bodyType = RigidbodyType2D.Dynamic; //在Static狀態下無法移動
-
-                nowStatus = Status.AirMoveStatus;
-                //power = 5;
-                ////                    方向   * 力道  * (1「上」 / -1 「下」)
-                //rb.velocity = directionUp * power * moveVariableVer;
-                Debug.Log("moveVariableVer : " + moveVariableVer);
-            }
-            else if (moveVariableHor < 0) //往下移動
-            {
-                //rb.bodyType = RigidbodyType2D.Dynamic; //在Static狀態下無法移動
-                //power = 5;
-                ////                    方向   * 力道  * (1「上」 / -1 「下」)
-                //rb.velocity = directionUp * power * moveVariableVer;
-                Debug.Log("moveVariableVer : " + moveVariableVer);
-            }
-            else //沒移動
+            if (moveVariableVer == 0 && moveVariableHor == 0) //沒有移動
             {
                 nowStatus = Status.FloatingStatus; //浮空狀態
                 rb.bodyType = RigidbodyType2D.Static; //浮空狀態
                 Debug.Log("moveVariableVer : " + moveVariableVer);
                 Debug.Log("沒移動");
             }
-        }                  
+            else
+            {
+                //有移動
+                rb.bodyType = RigidbodyType2D.Dynamic; //在Static狀態下無法移動
+                nowStatus = Status.AirMoveStatus;
+                Debug.Log("moveVariableVer : " + moveVariableVer);
+            }
+        }
+        
 
         if (nowStatus == Status.AirMoveStatus)
-        {                        
-            power = 5;
-            //                    方向   * 力道  * (1「上」 / -1 「下」)
-            rb.velocity = directionUp * power * moveVariableVer;                        
+        {                                   
+            if (moveVariableVer == 0 && moveVariableHor == 0)
+            {
+                nowStatus = Status.FloatingStatus; //浮空狀態
+                rb.bodyType = RigidbodyType2D.Static; //浮空狀態
+                Debug.Log("moveVariableVer : " + moveVariableVer);
+                Debug.Log("沒移動");
+            }
+            else
+            {
+                //power = 5;
+                ////                    方向   * 力道  * (1「上」 / -1 「下」)
+                //rb.velocity = (directionUp + directionRight) * power * ((moveVariableVer + moveVariableHor) / 2);
+
+                //power = 5;
+                ////                    方向   * 力道  * (1「上」 / -1 「下」)
+                //rb.velocity = directionUp * power * moveVariableVer;
+                ConsumeStamina();
+
+                Vector3 movement = new Vector3(moveVariableHor, moveVariableVer, 0);
+                Debug.Log($"movement : {movement}");
+                rb.velocity = movement * power;
+                
+            }
         }
     }
 
     /// <summary>
     /// 普通狀態移動
     /// </summary>
-    private void NormalStatusMove()
+    private void NormalStatusMove(float moveVariableHor)
     {
-        moveVariableHor = Input.GetAxis("Horizontal"); //水平移動
+        
 
-        if (moveVariableHor > 0) //往右移動
+        //if (moveVariableHor > 0) //往右移動
+        //{
+        //    power = 5;
+        //    //                    方向   * 力道  * (1「右」 / -1 「左」)  * 角色的重力(後面2個)
+        //    rb.velocity = directionRight * power * moveVariableHor + directionUp * rb.velocity.y;
+        //    Debug.Log("往右移動");
+        //}
+        //else if (moveVariableHor < 0) //往左移動
+        //{
+        //    power = 5;
+        //    //                    方向   * 力道  * (1「右」 / -1 「左」)  * 角色的重力 (後面2個)
+        //    rb.velocity = directionRight * power * moveVariableHor + directionUp * rb.velocity.y;
+        //    Debug.Log("往左移動");
+        //}
+        //else //沒移動
+        //{
+        //    power = 0;
+        //    //                  方向    * 力道  * (1「右」 / -1 「左」) * 角色的重力 (後面2個)
+        //    rb.velocity = directionDown * power * moveVariableHor + directionUp * rb.velocity.y;
+        //    //Debug.Log("沒移動");
+        //}
+
+        if (nowStatus == Status.NormalStatus)
         {
-            power = 5;
-            //                    方向   * 力道  * (1「右」 / -1 「左」)  * 角色的重力(後面2個)
-            rb.velocity = directionRight * power * moveVariableHor + directionUp * rb.velocity.y;
-            Debug.Log("往右移動");
+            Vector3 movement = new Vector3(moveVariableHor, 0, 0);
+            Debug.Log($"movement : {movement}");
+            rb.velocity = movement * power + directionUp * rb.velocity.y;
         }
-        else if (moveVariableHor < 0) //往左移動
-        {
-            power = 5;
-            //                    方向   * 力道  * (1「右」 / -1 「左」)  * 角色的重力 (後面2個)
-            rb.velocity = directionRight * power * moveVariableHor + directionUp * rb.velocity.y;
-            Debug.Log("往左移動");
-        }
-        else //沒移動
-        {
-            power = 0;
-            //                  方向    * 力道  * (1「右」 / -1 「左」) * 角色的重力 (後面2個)
-            rb.velocity = directionDown * power * moveVariableHor + directionUp * rb.velocity.y;
-            //Debug.Log("沒移動");
-        }
+        
     }
 
     /// <summary>
     /// 移動
     /// </summary>
-    private void Move()
+    /// <param name="moveVariableHor">水平移動變數</param>
+    /// <param name="moveVariableVer">垂直移動變數</param>
+    private void Move(float moveVariableHor, float moveVariableVer)
     {
-        NormalStatusMove();
-        FloatingStatusMove();
+        NormalStatusMove(moveVariableHor);
+        FloatingStatusMove(moveVariableHor, moveVariableVer);
     }
 
     /// <summary>
@@ -180,12 +246,21 @@ public class PlayerCtrl : MonoBehaviour
         會返還一個float，往左(A、←)float = -1，往右(D、→)float = 1，都沒按float = 0
         可以用返還的float來間接當作控制移動的參數。
         */
-
-
+        moveVariableHor = Input.GetAxis("Horizontal"); //水平移動
+        moveVariableVer = Input.GetAxis("Vertical"); //垂直移動
         #endregion
 
         Jump();
-        Move();       
+        Move(moveVariableHor, moveVariableVer);       
+    }
+
+    /// <summary>
+    /// 消耗耐力
+    /// </summary>
+    public void ConsumeStamina()
+    {
+        nowStamina -= Time.deltaTime * 10; //每秒消耗10點耐力
+        staminaBar.transform.localPosition = new Vector3((-250 + 250 * (nowStamina / maxStamina)), 0f, 0f);
     }
 
     private void OnCollisionEnter2D(Collision2D hit)
@@ -197,6 +272,7 @@ public class PlayerCtrl : MonoBehaviour
         {
             jumpTimes = 0; //跳次數重製
             rb.bodyType = RigidbodyType2D.Dynamic; //解除浮空狀態
+            nowStatus = Status.NormalStatus;
         }
     }
 
@@ -212,5 +288,6 @@ public class PlayerCtrl : MonoBehaviour
     void Update()
     {
         PlayerMove();
+        //staminaBar.transform.localPosition = new Vector3(-250 + 250 * (nowStamina / maxStamina), 0f, 0f);
     }
 }
