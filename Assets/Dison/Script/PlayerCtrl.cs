@@ -33,6 +33,13 @@ public class PlayerCtrl : MonoBehaviour
     /// </summary>
     public Status nowStatus;
 
+    /// <summary>
+    /// 移動行為
+    /// </summary>
+    public MoveBehaviour moveStatus;
+
+    
+
     [Header("耐力")]
     /// <summary>
     /// 最大耐力
@@ -130,9 +137,22 @@ public class PlayerCtrl : MonoBehaviour
                 //rb.velocity = directionUp * power * moveVariableVer;
 
                 //浮空狀態移動
-                Vector3 movement = new Vector3(moveVariableHor, moveVariableVer, 0);
-                Debug.Log($"movement : {movement}");
-                rb.velocity = movement * power;
+                if (nowStatus == Status.AirMoveStatus)
+                {
+                    switch (moveStatus)
+                    {
+                        case MoveBehaviour.Walk:
+                            power = 5;
+                            break;
+                        case MoveBehaviour.Run:
+                            power = 10;
+                            break;
+                    }
+
+                    Vector3 movement = new Vector3(moveVariableHor, moveVariableVer, 0);
+                    //Debug.Log($"movement : {movement}");
+                    rb.velocity = movement * power;
+                }                
             }
         }
     }
@@ -164,8 +184,34 @@ public class PlayerCtrl : MonoBehaviour
         //    //Debug.Log("沒移動");
         //}
 
+        //if (nowStatus == Status.NormalStatus && moveStatus == MoveStatus.Walk)
+        //{
+        //    power = 5;
+        //    Vector3 movement = new Vector3(moveVariableHor, 0, 0);
+        //    //Debug.Log($"movement : {movement}");
+        //    rb.velocity = movement * power + directionUp * rb.velocity.y;
+        //}
+
+        //if (nowStatus == Status.NormalStatus && moveStatus == MoveStatus.Run)
+        //{
+        //    power = 10;
+        //    Vector3 movement = new Vector3(moveVariableHor, 0, 0);
+        //    //Debug.Log($"movement : {movement}");
+        //    rb.velocity = movement * power + directionUp * rb.velocity.y;
+        //}
+
         if (nowStatus == Status.NormalStatus)
         {
+            switch (moveStatus)
+            {
+                case MoveBehaviour.Walk:
+                    power = 5;                    
+                    break;
+                case MoveBehaviour.Run:
+                    power = 10;                    
+                    break;
+            }
+
             Vector3 movement = new Vector3(moveVariableHor, 0, 0);
             //Debug.Log($"movement : {movement}");
             rb.velocity = movement * power + directionUp * rb.velocity.y;
@@ -173,11 +219,20 @@ public class PlayerCtrl : MonoBehaviour
     }
 
     /// <summary>
-    /// 移動
+    /// 走
     /// </summary>
     /// <param name="moveVariableHor">水平移動變數</param>
     /// <param name="moveVariableVer">垂直移動變數</param>
-    private void Move(float moveVariableHor, float moveVariableVer)
+    private void Walk(float moveVariableHor, float moveVariableVer)
+    {
+        NormalStatusMove(moveVariableHor);
+        FloatingStatusMove(moveVariableHor, moveVariableVer);
+    }
+
+    /// <summary>
+    /// 跑
+    /// </summary>
+    private void Run()
     {
         NormalStatusMove(moveVariableHor);
         FloatingStatusMove(moveVariableHor, moveVariableVer);
@@ -217,29 +272,37 @@ public class PlayerCtrl : MonoBehaviour
     }
 
     /// <summary>
+    /// 站立
+    /// </summary>
+    public void Stand()
+    {
+        switch (nowStatus)
+        {
+            case Status.StandTurnLeftStatus:
+                //站立(人物面向左)
+                rb.bodyType = RigidbodyType2D.Static;
+                //人物轉向左邊動畫
+                Debug.Log("站立(人物面向左)");
+                break;
+            case Status.StandTurnRightStatus:
+                //站立(人物面向右)
+                rb.bodyType = RigidbodyType2D.Static;
+                //人物轉向右邊動畫
+                Debug.Log("站立(人物面向右)");
+                break;
+        }
+    }
+
+
+    /// <summary>
     /// 玩家移動
     /// </summary>
-    public void PlayerMove()
-    {
-        #region Input.GetKey
-        /*
-        Input.GetKey() : 
-        只有在按鍵盤的時候才會有反應，然而角色的重力是時時刻刻存在的，所以移動角色不要用。
-        */
-        #endregion
-
-        #region Input.GetAxis
-        /*
-        Input.GetAxis() :
-        會返還一個float，往左(A、←)float = -1，往右(D、→)float = 1，都沒按float = 0
-        可以用返還的float來間接當作控制移動的參數。
-        */
-        moveVariableHor = Input.GetAxis("Horizontal"); //水平移動
-        moveVariableVer = Input.GetAxis("Vertical"); //垂直移動
-        #endregion
-
+    public void PlayerMove(float moveVariableHor, float moveVariableVer)
+    {        
         Jump();
-        Move(moveVariableHor, moveVariableVer);
+        Walk(moveVariableHor, moveVariableVer);
+        Run();
+        Stand();
     }
     #endregion
 
@@ -294,6 +357,135 @@ public class PlayerCtrl : MonoBehaviour
     }
     #endregion
 
+    #region 切換行為
+    /// <summary>
+    /// 切換行為
+    /// </summary>
+    public void SwitchBehaviour(float moveVariableHor)
+    {        
+        MobileBehaviour();
+        AttackBehaviour();
+    }
+
+    /// <summary>
+    /// 走路行為
+    /// </summary>
+    public void WalkBehaviour()
+    {          
+        moveStatus = MoveBehaviour.Walk;
+        Debug.Log("切換為走路行為");                              
+    }
+
+    /// <summary>
+    /// 跑步行為
+    /// </summary>
+    public void RunBehaviour()
+    {           
+        moveStatus = MoveBehaviour.Run;
+        Debug.Log("切換為跑步行為");                                
+    }
+
+    /// <summary>
+    /// 站立行為
+    /// </summary>
+    public void StandBehaviour(float moveVariableHor)
+    {
+        if (moveVariableHor < 0) //一開始先按左
+        {
+            if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) //再按右
+            {
+                moveStatus = MoveBehaviour.Stand;
+                nowStatus = Status.StandTurnLeftStatus;
+                Debug.Log("切換為站立行為");
+            }
+        }
+
+        if (moveVariableHor > 0) //一開始先按右
+        {
+            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) //再按左
+            {
+                moveStatus = MoveBehaviour.Stand;
+                nowStatus = Status.StandTurnRightStatus;
+                Debug.Log("切換為站立行為");
+            }
+        }
+    }
+
+    /// <summary>
+    /// 移動的行為
+    /// </summary>
+    public void MobileBehaviour()
+    {
+        if (Input.GetKeyDown(KeyCode.LeftControl))
+        {
+            switch (moveStatus)
+            {
+                case MoveBehaviour.Walk:
+                    RunBehaviour();
+                    break;
+                case MoveBehaviour.Run:
+                    WalkBehaviour();
+                    break;
+            }
+        }
+
+        StandBehaviour(moveVariableHor);
+    }
+
+    /// <summary>
+    /// 攻擊行為
+    /// </summary>
+    public void AttackBehaviour()
+    {
+        NormalAttackBehaviour();
+        SpecialAttackBehaviour();
+        ProfessionalAttackBehaviour();
+        ProfessionalSpecialAttackBehaviour();
+    }
+
+    /// <summary>
+    /// 普通攻擊行為
+    /// </summary>
+    public void NormalAttackBehaviour()
+    {
+        //按了甚麼鍵是普通攻擊
+    }
+
+    /// <summary>
+    /// 特殊攻擊行為
+    /// </summary>
+    public void SpecialAttackBehaviour()
+    {
+        //按了甚麼鍵是特殊攻擊
+    }
+
+    /// <summary>
+    /// 職業攻擊行為
+    /// </summary>
+    public void ProfessionalAttackBehaviour()
+    {
+        //按了甚麼鍵是職業攻擊
+    }
+
+    /// <summary>
+    /// 職業特殊攻擊行為
+    /// </summary>
+    public void ProfessionalSpecialAttackBehaviour()
+    {
+        //按了甚麼鍵是職業特殊攻擊
+    }
+    #endregion
+
+    #region 玩家攻擊
+    /// <summary>
+    /// 玩家攻擊
+    /// </summary>
+    public void PlayerAttack()
+    {
+
+    }
+    #endregion
+
     /// <summary>
     /// 初始化
     /// </summary>
@@ -303,6 +495,7 @@ public class PlayerCtrl : MonoBehaviour
         nowStamina = 100f;
         maxStamina = 100f;
         nowStatus = Status.NormalStatus;
+        moveStatus = MoveBehaviour.Walk;
     }
 
     /// <summary>
@@ -310,9 +503,29 @@ public class PlayerCtrl : MonoBehaviour
     /// </summary>
     public void PlayerBehaviour()
     {
-        PlayerMove();
+        #region Input.GetKey
+        /*
+        Input.GetKey() : 
+        只有在按鍵盤的時候才會有反應，然而角色的重力是時時刻刻存在的，所以移動角色不要用。
+        */
+        #endregion
+
+        #region Input.GetAxis
+        /*
+        Input.GetAxis() :
+        會返還一個float，往左(A、←)float = -1，往右(D、→)float = 1，都沒按float = 0
+        可以用返還的float來間接當作控制移動的參數。
+        */
+        moveVariableHor = Input.GetAxis("Horizontal"); //水平移動
+        moveVariableVer = Input.GetAxis("Vertical"); //垂直移動
+        //Debug.Log($"moveVariableHor : {moveVariableHor}");
+        #endregion
+
+        PlayerMove(moveVariableHor, moveVariableVer);
         PlayerConsume();
         PlayerTired();
+        PlayerAttack();
+        SwitchBehaviour(moveVariableHor);
     }
 
     private void OnCollisionEnter2D(Collision2D hit)
