@@ -38,8 +38,23 @@ public class PlayerCtrl : MonoBehaviour
     /// </summary>
     public MoveBehaviour moveStatus;
 
-    
+    /// <summary>
+    /// 身體
+    /// </summary>
+    public GameObject body
+    {
+        get { return rb.transform.GetChild(0).gameObject; }
+    }
 
+    /// <summary>
+    /// 向左轉(bool)
+    /// </summary>
+    bool turnLeft;
+
+    /// <summary>
+    /// 碰到地板
+    /// </summary>
+    bool touchFloor;
     [Header("耐力")]
     /// <summary>
     /// 最大耐力
@@ -60,6 +75,11 @@ public class PlayerCtrl : MonoBehaviour
     /// 耐力已耗盡
     /// </summary>
     bool staminaEmpty;
+
+    /// <summary>
+    /// 攻擊行為
+    /// </summary>
+    public ATKBehaviour atkBehaviour;
     /*    
     經過我的觀察，
     跳　>> AddForce
@@ -97,6 +117,9 @@ public class PlayerCtrl : MonoBehaviour
         //        Debug.Log("沒移動");
         //    }
         //}
+
+        if (nowStamina <= 0) //沒耐力不能浮空
+            return;
 
         if (nowStatus == Status.FloatingStatus) //在浮空狀態下，才能上下移動
         {
@@ -208,10 +231,12 @@ public class PlayerCtrl : MonoBehaviour
                     power = 5;                    
                     break;
                 case MoveBehaviour.Run:
-                    power = 10;                    
+                    power = 10;
+                    if (nowStamina <= 0) //沒耐力不能跑
+                        return;
                     break;
             }
-
+            
             Vector3 movement = new Vector3(moveVariableHor, 0, 0);
             //Debug.Log($"movement : {movement}");
             rb.velocity = movement * power + directionUp * rb.velocity.y;
@@ -243,6 +268,9 @@ public class PlayerCtrl : MonoBehaviour
     /// </summary>
     private void Jump()
     {
+        if (nowStamina <= 0) //沒耐力不能跳
+            return;
+
         //跳(連續案就是N段跳(如果沒有限制的話))
         if (Input.GetKeyDown(KeyCode.Space))
         {
@@ -257,6 +285,7 @@ public class PlayerCtrl : MonoBehaviour
             {
                 power = 5;
                 rb.velocity = directionUp * power;
+                touchFloor = false;
                 Debug.Log("跳一次");
                 //rb.AddForce(directionUp * power);
                 //Debug.Log($"跳的power : {power}");
@@ -293,6 +322,49 @@ public class PlayerCtrl : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 轉身
+    /// </summary>
+    public void TurnBody()
+    {
+        TurnRight();
+        TurnLeft();
+    }
+
+    /// <summary>
+    /// 轉右邊
+    /// </summary>
+    public void TurnRight()
+    {        
+        if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
+        {
+            if (turnLeft)
+            {
+                body.transform.Rotate(0, 180, 0);
+                turnLeft = false;
+            }                
+            else
+                body.transform.Rotate(0, 0, 0);
+        }
+    }
+
+    /// <summary>
+    /// 轉左邊
+    /// </summary>
+    public void TurnLeft()
+    {        
+        if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
+        {
+            if (!turnLeft)
+            {
+                turnLeft = true;
+                body.transform.Rotate(0, 180, 0);
+            }
+            else
+                body.transform.Rotate(0, 0, 0);
+
+        }
+    }
 
     /// <summary>
     /// 玩家移動
@@ -300,23 +372,129 @@ public class PlayerCtrl : MonoBehaviour
     public void PlayerMove(float moveVariableHor, float moveVariableVer)
     {        
         Jump();
+        TurnBody();
         Walk(moveVariableHor, moveVariableVer);
         Run();
-        Stand();
+        Stand();        
     }
     #endregion
 
     #region 玩家消耗
     /// <summary>
-    /// 消耗耐力
+    /// 所有空中狀態
     /// </summary>
-    public void ConsumeStamina()
+    public void AllAirStatus()
     {
-        if (nowStatus != Status.None && nowStatus != Status.NormalStatus)
+        if (nowStatus == Status.FloatingStatus || nowStatus == Status.AirMoveStatus)
         {
             nowStamina -= Time.deltaTime * 10; //每秒消耗10點耐力
             staminaBar.transform.localPosition = new Vector3((-250 + 250 * (nowStamina / maxStamina)), 0f, 0f);
         }
+    }
+
+    /// <summary>
+    /// 跑步行為
+    /// </summary>
+    public void RunBehave()
+    {
+        if (moveStatus == MoveBehaviour.Run)
+        {
+            nowStamina -= Time.deltaTime * 5; //每秒消耗5點耐力
+            staminaBar.transform.localPosition = new Vector3((-250 + 250 * (nowStamina / maxStamina)), 0f, 0f);
+        }
+    }
+
+    /// <summary>
+    /// 跳行為
+    /// </summary>
+    public void JumpBehave()
+    {
+        if (moveStatus == MoveBehaviour.Jump)
+        {
+            if (Input.GetKeyDown(KeyCode.Space) && nowStatus == Status.NormalStatus && touchFloor)
+            {
+                nowStamina -= 5; //每次跳消耗5點耐力
+                staminaBar.transform.localPosition = new Vector3((-250 + 250 * (nowStamina / maxStamina)), 0f, 0f);
+            }            
+        }
+    }
+
+    /// <summary>
+    /// 普通攻擊行為
+    /// </summary>
+    public void NormalATKBehave()
+    {
+        if (atkBehaviour == ATKBehaviour.NormalATK)
+        {
+            if (Input.GetKeyDown(KeyCode.Mouse0))
+            {
+                nowStamina -= 5; //每次攻擊消耗5耐力
+                if (nowStamina <= 0)
+                    nowStamina = 0;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 特別攻擊行為
+    /// </summary>
+    public void SpecialATKBehave()
+    {
+        if (atkBehaviour == ATKBehaviour.SpecialATK)
+        {
+            if (Input.GetKeyDown(KeyCode.Mouse0))
+            {
+                nowStamina -= 5; //每次攻擊消耗5耐力
+                if (nowStamina <= 0)
+                    nowStamina = 0;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 職業攻擊行為
+    /// </summary>
+    public void ProfessionalATKBehave()
+    {
+        if (atkBehaviour == ATKBehaviour.ProfessionalATK)
+        {
+            if (Input.GetKeyDown(KeyCode.Mouse0))
+            {
+                nowStamina -= 5; //每次攻擊消耗5耐力
+                if (nowStamina <= 0)
+                    nowStamina = 0;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 職業特別攻擊行為
+    /// </summary>
+    public void ProfessionalSpecialATKBehave()
+    {
+        if (atkBehaviour == ATKBehaviour.ProfessionalSpecialATK)
+        {
+            if (Input.GetKeyDown(KeyCode.Mouse0))
+            {
+                nowStamina -= 5; //每次攻擊消耗5耐力
+                if (nowStamina <= 0)
+                    nowStamina = 0;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 消耗耐力
+    /// </summary>
+    public void ConsumeStamina()
+    {
+        AllAirStatus();
+        RunBehave();
+        JumpBehave();
+        NormalATKBehave();
+        SpecialATKBehave();
+        ProfessionalATKBehave();
+        ProfessionalSpecialATKBehave();
     }
 
     /// <summary>
@@ -412,6 +590,16 @@ public class PlayerCtrl : MonoBehaviour
     }
 
     /// <summary>
+    /// 跳的行為
+    /// </summary>
+    public void JumpBehaviour()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            moveStatus = MoveBehaviour.Jump;
+        }
+    }
+    /// <summary>
     /// 移動的行為
     /// </summary>
     public void MobileBehaviour()
@@ -430,6 +618,7 @@ public class PlayerCtrl : MonoBehaviour
         }
 
         StandBehaviour(moveVariableHor);
+        JumpBehaviour();
     }
 
     /// <summary>
@@ -521,11 +710,12 @@ public class PlayerCtrl : MonoBehaviour
         //Debug.Log($"moveVariableHor : {moveVariableHor}");
         #endregion
 
+        SwitchBehaviour(moveVariableHor);
         PlayerMove(moveVariableHor, moveVariableVer);
         PlayerConsume();
         PlayerTired();
         PlayerAttack();
-        SwitchBehaviour(moveVariableHor);
+        
     }
 
     private void OnCollisionEnter2D(Collision2D hit)
@@ -535,6 +725,7 @@ public class PlayerCtrl : MonoBehaviour
         Debug.Log("Enter  hit.transform.tag : " + hit.transform.tag);
         if (hit.transform.tag == "Floor") //玩家碰到地板
         {
+            touchFloor = true;
             jumpTimes = 0; //跳次數重製
             rb.bodyType = RigidbodyType2D.Dynamic; //解除浮空狀態
             nowStatus = Status.NormalStatus;

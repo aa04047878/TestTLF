@@ -2,11 +2,26 @@
 public enum Status 
 {
     None,
-    NormalStatus,         //普通狀態
-    FloatingStatus,       //浮空狀態
-    AirMoveStatus,        //浮空移動狀態
-    StandTurnLeftStatus,  //站立狀態轉向左
-    StandTurnRightStatus, //站立狀態轉向右
+    /// <summary>
+    /// 普通狀態
+    /// </summary>
+    NormalStatus,
+    /// <summary>
+    /// 浮空狀態
+    /// </summary>
+    FloatingStatus,
+    /// <summary>
+    /// 浮空移動狀態
+    /// </summary>
+    AirMoveStatus,
+    /// <summary>
+    /// 站立狀態轉向左
+    /// </summary>
+    StandTurnLeftStatus,
+    /// <summary>
+    /// 站立狀態轉向右
+    /// </summary>
+    StandTurnRightStatus, 
 
 
 }
@@ -17,10 +32,27 @@ public enum Status
 public enum MoveBehaviour
 {
     None,
-    Walk,  //走
-    Run,   //跑
-    Stand, //站立
-    Flash, //閃現
+    /// <summary>
+    /// 走
+    /// </summary>
+    Walk,
+    /// <summary>
+    /// 跑
+    /// </summary>
+    Run,
+    /// <summary>
+    /// 站立
+    /// </summary>
+    Stand,
+    /// <summary>
+    /// 閃現
+    /// </summary>
+    Flash, 
+    /// <summary>
+    /// 跳
+    /// </summary>
+    Jump,
+
 
 
 }
@@ -31,9 +63,21 @@ public enum MoveBehaviour
 public enum ATKBehaviour
 {
     None,
-    NormalATK,        //普通攻擊
-    SpecialATK,       //特別攻擊
-    ProfessionalATK,  //職業攻擊
-    ProfessionalSpecialATK, //職業特別攻擊
+    /// <summary>
+    /// 普通攻擊
+    /// </summary>
+    NormalATK,
+    /// <summary>
+    /// 特別攻擊
+    /// </summary>
+    SpecialATK,
+    /// <summary>
+    /// 職業攻擊
+    /// </summary>
+    ProfessionalATK,
+    /// <summary>
+    /// 職業特別攻擊
+    /// </summary>
+    ProfessionalSpecialATK, 
 
 }
