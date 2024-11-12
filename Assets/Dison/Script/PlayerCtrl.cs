@@ -63,7 +63,7 @@ public class PlayerCtrl : MonoBehaviour
     bool standed;
 
     /// <summary>
-    /// 動作
+    /// 動作行為
     /// </summary>
     public MotionBehaviour motion;
     
@@ -339,46 +339,63 @@ public class PlayerCtrl : MonoBehaviour
         //        break;
         //}
 
-        if (standed)
-            return;
+        //if (standed)
+        //    return;
 
         if (motion == MotionBehaviour.Stand)
         {
             rb.bodyType = RigidbodyType2D.Static;
-            standed = true;
+            //standed = true;
             Debug.Log("玩家站立");
         }
     }
 
     /// <summary>
+    /// 非站立
+    /// </summary>
+    public void NotStand()
+    {
+        if (motion == MotionBehaviour.NotStand)
+        {
+            rb.bodyType = RigidbodyType2D.Dynamic;
+            Debug.Log("玩家非站立");
+        }
+    }
+    /// <summary>
     /// 轉身
     /// </summary>
     public void TurnBody()
     {
-        TurnRight();
         TurnLeft();
+        TurnRight();
+        
     }
 
     /// <summary>
     /// 轉右邊
     /// </summary>
     public void TurnRight()
-    {        
+    {
         if (nowStatus == Status.StandTurnRightStatus)
         {
-            body.transform.Rotate(0, 0, 0);
+            //body.transform.Rotate(0, 0, 0);
+            body.transform.eulerAngles = new Vector3(0, 0, 0);
         }
-
-        if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
+        else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
         {
 
+            //if (turnLeft)
+            //{
+            //    body.transform.Rotate(0, 180, 0);
+            //    turnLeft = false;
+            //}                
+            //else
+            //    body.transform.Rotate(0, 0, 0);
+
             if (turnLeft)
-            {
-                body.transform.Rotate(0, 180, 0);
-                turnLeft = false;
-            }                
-            else
-                body.transform.Rotate(0, 0, 0);
+                return;
+
+            body.transform.eulerAngles = new Vector3(0, 0, 0);
         }
     }
 
@@ -389,20 +406,27 @@ public class PlayerCtrl : MonoBehaviour
     {
         if (nowStatus == Status.StandTurnLeftStatus)
         {
-            body.transform.Rotate(0, 180, 0);
-        }
+            //body.transform.Rotate(0, 180, 0);
+            body.transform.eulerAngles = new Vector3(0, 180, 0);
 
-        if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
+        }        
+        else if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
         {
-            if (!turnLeft)
-            {
-                turnLeft = true;
-                body.transform.Rotate(0, 180, 0);
-            }
-            else
-                body.transform.Rotate(0, 0, 0);
+            //if (!turnLeft)
+            //{
+            //    turnLeft = true;
+            //    body.transform.Rotate(0, 180, 0);
+            //}
+            //else
+            //    body.transform.Rotate(0, 0, 0);
+
+            turnLeft = true;
+            body.transform.eulerAngles = new Vector3(0, 180, 0);
 
         }
+
+        if (Input.GetKeyUp(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
+            turnLeft = false;
     }
 
     /// <summary>
@@ -414,7 +438,8 @@ public class PlayerCtrl : MonoBehaviour
         TurnBody();
         Walk(moveVariableHor, moveVariableVer);
         Run();
-        Stand();        
+        Stand();
+        NotStand();
     }
     #endregion
 
@@ -581,7 +606,7 @@ public class PlayerCtrl : MonoBehaviour
     public void SwitchBehaviour(float moveVariableHor)
     {        
         MobileBehaviour();
-        MotionsBehaviour();
+        MotionsBehaviour(moveVariableHor);
         AttackBehaviour();
     }
 
@@ -608,19 +633,19 @@ public class PlayerCtrl : MonoBehaviour
     /// </summary>
     public void StandBehaviour(float moveVariableHor)
     {
+        //Status tempStatus = status;
         if (moveVariableHor < 0) //一開始先按左
         {
-            if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) //再按右
+            if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) //再按右
             {
                 motion = MotionBehaviour.Stand;
                 nowStatus = Status.StandTurnLeftStatus;
                 Debug.Log("切換為站立行為");
-            }
+            }            
         }
-
-        if (moveVariableHor > 0) //一開始先按右
+        else if (moveVariableHor > 0) //一開始先按右
         {
-            if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) //再按左
+            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) //再按左
             {
                 motion = MotionBehaviour.Stand;
                 nowStatus = Status.StandTurnRightStatus;
@@ -637,8 +662,28 @@ public class PlayerCtrl : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space))
         {
             motion = MotionBehaviour.Jump;
+            Debug.Log("動作行為 : 跳");
         }
     }
+
+    /// <summary>
+    /// 非站立行為
+    /// </summary>
+    public void NotStandBehaviour(float moveVariableHor)
+    {                
+        motion = MotionBehaviour.NotStand;
+        Debug.Log("動作行為 : 非站立");                   
+    }
+
+    /// <summary>
+    /// 沒有行為
+    /// </summary>
+    public void NoneBehaviour()
+    {                
+        motion = MotionBehaviour.None;
+        Debug.Log("動作行為 : 沒有");        
+    }
+
     /// <summary>
     /// 移動的行為
     /// </summary>
@@ -663,10 +708,43 @@ public class PlayerCtrl : MonoBehaviour
     /// <summary>
     /// 動作行為
     /// </summary>
-    public void MotionsBehaviour()
+    public void MotionsBehaviour(float moveVariableHor)
     {
-        StandBehaviour(moveVariableHor);
+        //站立行為 和 非站立行為 和 沒有行為 同時間只能存在一個，只能一起判斷
+
+        if (moveVariableHor > 0)
+        {
+            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
+            {
+                StandBehaviour(moveVariableHor);
+                Debug.Log("站立行為範圍");
+            }
+            else if (moveVariableHor != 0)
+            {
+                NotStandBehaviour(moveVariableHor);
+            }
+        }
+        else if (moveVariableHor < 0)
+        {
+            if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
+            {
+                StandBehaviour(moveVariableHor);
+                Debug.Log("站立行為範圍");
+            }
+            else if (moveVariableHor != 0)
+            {
+                NotStandBehaviour(moveVariableHor);
+            }
+        }
+        
+
         JumpBehaviour();
+
+
+        //StandBehaviour(moveVariableHor);
+        //NotStandBehaviour(moveVariableHor);
+        //JumpBehaviour();
+        //NoneBehaviour();
     }
 
     /// <summary>

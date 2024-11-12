@@ -61,6 +61,11 @@ public enum MotionBehaviour
     /// 站立
     /// </summary>
     Stand,
+    /// <summary>
+    /// 非站立
+    /// </summary>
+    NotStand,
+
 
 }
 
