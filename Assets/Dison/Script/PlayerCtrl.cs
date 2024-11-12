@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -36,7 +37,7 @@ public class PlayerCtrl : MonoBehaviour
     /// <summary>
     /// 移動行為
     /// </summary>
-    public MoveBehaviour moveStatus;
+    public MoveBehaviour moveBehaviour;
 
     /// <summary>
     /// 身體
@@ -55,6 +56,17 @@ public class PlayerCtrl : MonoBehaviour
     /// 碰到地板
     /// </summary>
     bool touchFloor;
+
+    /// <summary>
+    /// 是否已經站立
+    /// </summary>
+    bool standed;
+
+    /// <summary>
+    /// 動作
+    /// </summary>
+    public MotionBehaviour motion;
+    
     [Header("耐力")]
     /// <summary>
     /// 最大耐力
@@ -80,6 +92,8 @@ public class PlayerCtrl : MonoBehaviour
     /// 攻擊行為
     /// </summary>
     public ATKBehaviour atkBehaviour;
+
+
     /*    
     經過我的觀察，
     跳　>> AddForce
@@ -162,7 +176,7 @@ public class PlayerCtrl : MonoBehaviour
                 //浮空狀態移動
                 if (nowStatus == Status.AirMoveStatus)
                 {
-                    switch (moveStatus)
+                    switch (moveBehaviour)
                     {
                         case MoveBehaviour.Walk:
                             power = 5;
@@ -225,7 +239,7 @@ public class PlayerCtrl : MonoBehaviour
 
         if (nowStatus == Status.NormalStatus)
         {
-            switch (moveStatus)
+            switch (moveBehaviour)
             {
                 case MoveBehaviour.Walk:
                     power = 5;                    
@@ -305,20 +319,34 @@ public class PlayerCtrl : MonoBehaviour
     /// </summary>
     public void Stand()
     {
-        switch (nowStatus)
+        //switch (nowStatus)
+        //{
+        //    case Status.StandTurnLeftStatus:
+        //        if (standed)
+        //            return;
+        //        //站立(人物面向左)
+        //        rb.bodyType = RigidbodyType2D.Static;
+        //        standed = true;
+        //        Debug.Log("站立狀態(人物面向左)");
+        //        break;
+        //    case Status.StandTurnRightStatus:
+        //        if (standed)
+        //            return;
+        //        //站立(人物面向右)
+        //        rb.bodyType = RigidbodyType2D.Static;
+        //        standed = true;
+        //        Debug.Log("站立狀態(人物面向右)"); 
+        //        break;
+        //}
+
+        if (standed)
+            return;
+
+        if (motion == MotionBehaviour.Stand)
         {
-            case Status.StandTurnLeftStatus:
-                //站立(人物面向左)
-                rb.bodyType = RigidbodyType2D.Static;
-                //人物轉向左邊動畫
-                Debug.Log("站立(人物面向左)");
-                break;
-            case Status.StandTurnRightStatus:
-                //站立(人物面向右)
-                rb.bodyType = RigidbodyType2D.Static;
-                //人物轉向右邊動畫
-                Debug.Log("站立(人物面向右)");
-                break;
+            rb.bodyType = RigidbodyType2D.Static;
+            standed = true;
+            Debug.Log("玩家站立");
         }
     }
 
@@ -336,8 +364,14 @@ public class PlayerCtrl : MonoBehaviour
     /// </summary>
     public void TurnRight()
     {        
+        if (nowStatus == Status.StandTurnRightStatus)
+        {
+            body.transform.Rotate(0, 0, 0);
+        }
+
         if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
         {
+
             if (turnLeft)
             {
                 body.transform.Rotate(0, 180, 0);
@@ -352,7 +386,12 @@ public class PlayerCtrl : MonoBehaviour
     /// 轉左邊
     /// </summary>
     public void TurnLeft()
-    {        
+    {
+        if (nowStatus == Status.StandTurnLeftStatus)
+        {
+            body.transform.Rotate(0, 180, 0);
+        }
+
         if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
         {
             if (!turnLeft)
@@ -397,7 +436,7 @@ public class PlayerCtrl : MonoBehaviour
     /// </summary>
     public void RunBehave()
     {
-        if (moveStatus == MoveBehaviour.Run)
+        if (moveBehaviour == MoveBehaviour.Run)
         {
             nowStamina -= Time.deltaTime * 5; //每秒消耗5點耐力
             staminaBar.transform.localPosition = new Vector3((-250 + 250 * (nowStamina / maxStamina)), 0f, 0f);
@@ -409,7 +448,7 @@ public class PlayerCtrl : MonoBehaviour
     /// </summary>
     public void JumpBehave()
     {
-        if (moveStatus == MoveBehaviour.Jump)
+        if (motion == MotionBehaviour.Jump)
         {
             if (Input.GetKeyDown(KeyCode.Space) && nowStatus == Status.NormalStatus && touchFloor)
             {
@@ -542,6 +581,7 @@ public class PlayerCtrl : MonoBehaviour
     public void SwitchBehaviour(float moveVariableHor)
     {        
         MobileBehaviour();
+        MotionsBehaviour();
         AttackBehaviour();
     }
 
@@ -549,8 +589,8 @@ public class PlayerCtrl : MonoBehaviour
     /// 走路行為
     /// </summary>
     public void WalkBehaviour()
-    {          
-        moveStatus = MoveBehaviour.Walk;
+    {
+        moveBehaviour = MoveBehaviour.Walk;
         Debug.Log("切換為走路行為");                              
     }
 
@@ -558,8 +598,8 @@ public class PlayerCtrl : MonoBehaviour
     /// 跑步行為
     /// </summary>
     public void RunBehaviour()
-    {           
-        moveStatus = MoveBehaviour.Run;
+    {
+        moveBehaviour = MoveBehaviour.Run;
         Debug.Log("切換為跑步行為");                                
     }
 
@@ -570,9 +610,9 @@ public class PlayerCtrl : MonoBehaviour
     {
         if (moveVariableHor < 0) //一開始先按左
         {
-            if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) //再按右
+            if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) //再按右
             {
-                moveStatus = MoveBehaviour.Stand;
+                motion = MotionBehaviour.Stand;
                 nowStatus = Status.StandTurnLeftStatus;
                 Debug.Log("切換為站立行為");
             }
@@ -580,9 +620,9 @@ public class PlayerCtrl : MonoBehaviour
 
         if (moveVariableHor > 0) //一開始先按右
         {
-            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) //再按左
+            if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) //再按左
             {
-                moveStatus = MoveBehaviour.Stand;
+                motion = MotionBehaviour.Stand;
                 nowStatus = Status.StandTurnRightStatus;
                 Debug.Log("切換為站立行為");
             }
@@ -596,7 +636,7 @@ public class PlayerCtrl : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            moveStatus = MoveBehaviour.Jump;
+            motion = MotionBehaviour.Jump;
         }
     }
     /// <summary>
@@ -606,7 +646,7 @@ public class PlayerCtrl : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.LeftControl))
         {
-            switch (moveStatus)
+            switch (moveBehaviour)
             {
                 case MoveBehaviour.Walk:
                     RunBehaviour();
@@ -617,6 +657,14 @@ public class PlayerCtrl : MonoBehaviour
             }
         }
 
+        
+    }
+
+    /// <summary>
+    /// 動作行為
+    /// </summary>
+    public void MotionsBehaviour()
+    {
         StandBehaviour(moveVariableHor);
         JumpBehaviour();
     }
@@ -684,7 +732,7 @@ public class PlayerCtrl : MonoBehaviour
         nowStamina = 100f;
         maxStamina = 100f;
         nowStatus = Status.NormalStatus;
-        moveStatus = MoveBehaviour.Walk;
+        moveBehaviour = MoveBehaviour.Walk;
     }
 
     /// <summary>

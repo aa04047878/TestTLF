@@ -39,23 +39,31 @@ public enum MoveBehaviour
     /// <summary>
     /// 跑
     /// </summary>
-    Run,
-    /// <summary>
-    /// 站立
-    /// </summary>
-    Stand,
+    Run,    
     /// <summary>
     /// 閃現
     /// </summary>
-    Flash, 
+    Flash,     
+
+}
+
+/// <summary>
+/// 動作行為
+/// </summary>
+public enum MotionBehaviour
+{
+    None,
     /// <summary>
     /// 跳
     /// </summary>
     Jump,
-
-
+    /// <summary>
+    /// 站立
+    /// </summary>
+    Stand,
 
 }
+
 
 /// <summary>
 /// 攻擊行為
