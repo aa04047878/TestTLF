@@ -44,7 +44,7 @@ public class PlayerCtrl : MonoBehaviour
     /// </summary>
     public GameObject body
     {
-        get { return rb.transform.GetChild(0).gameObject; }
+        get { return rb.transform.gameObject; }
     }
 
     /// <summary>
